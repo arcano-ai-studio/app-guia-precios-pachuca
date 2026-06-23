@@ -28,47 +28,52 @@ st.divider()
 
 # 5. DESPLIEGUE DE RESULTADOS
 if colonia_seleccionada:
-    # Extraer los datos de la fila exacta
-    datos = df[(df['Nombre_Zona'] == zona_seleccionada) & (df['Colonia_Fraccionamiento'] == colonia_seleccionada)].iloc[0]
+    # Filtro de seguridad para forzar la coincidencia exacta
+    filtro = (df['Nombre_Zona'] == zona_seleccionada) & (df['Colonia_Fraccionamiento'] == colonia_seleccionada)
     
-    st.subheader(f"{datos['Colonia_Fraccionamiento']}")
-    st.caption(f"Vocación principal: {datos['Vocación']}")
-    
-    # Tarjetas numéricas
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric(label="Valor Mínimo", value=f"${datos['Valor_Minimo_m2']:,.2f}")
-    with col2:
-        st.metric(label="Valor Promedio", value=f"${datos['Valor_Promedio_m2']:,.2f}")
-    with col3:
-        st.metric(label="Valor Máximo", value=f"${datos['Valor_Maximo_m2']:,.2f}")
+    if not df[filtro].empty:
+        datos = df[filtro].iloc[0]
         
-    st.info(f"📈 **Tasa de Plusvalía (promedio últimos 8 años):** {datos['Tasa_Variacion']}%")
-    
-    st.divider()
-    
-    # 6. GRÁFICA DE BARRAS DINÁMICA
-    st.subheader("📊 Análisis de Mercado (m²)")
-    
-    df_grafica = pd.DataFrame({
-        'Categoría': ['Mínimo', 'Promedio', 'Máximo'],
-        'Valor (MXN)': [datos['Valor_Minimo_m2'], datos['Valor_Promedio_m2'], datos['Valor_Maximo_m2']]
-    })
-    
-    fig = px.bar(
-        df_grafica, 
-        x='Categoría', 
-        y='Valor (MXN)', 
-        text='Valor (MXN)',
-        color='Categoría',
-        color_discrete_sequence=['#4CAF50', '#2196F3', '#F44336']
-    )
-    
-    fig.update_traces(texttemplate='$%{text:,.2f}', textposition='outside')
-    fig.update_layout(showlegend=False, yaxis_title="Precio por m² (MXN)", margin=dict(t=30, b=0, l=0, r=0))
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # 7. SECCIÓN DEL MAPA
-    st.subheader("🗺️ Delimitación Geográfica")
-    st.warning("📍 **Espacio reservado para el mapa interactivo.** Próximamente se integrarán los polígonos del INEGI para esta área.")
+        st.subheader(f"{datos['Colonia_Fraccionamiento']}")
+        st.caption(f"Vocación principal: {datos['Vocación']}")
+        
+        # Tarjetas numéricas
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="Valor Mínimo", value=f"${datos['Valor_Minimo_m2']:,.2f}")
+        with col2:
+            st.metric(label="Valor Promedio", value=f"${datos['Valor_Promedio_m2']:,.2f}")
+        with col3:
+            st.metric(label="Valor Máximo", value=f"${datos['Valor_Maximo_m2']:,.2f}")
+            
+        st.info(f"📈 **Tasa de Plusvalía (promedio últimos 8 años):** {datos['Tasa_Variacion']}%")
+        
+        st.divider()
+        
+        # 6. GRÁFICA DE BARRAS DINÁMICA
+        st.subheader("📊 Análisis de Mercado (m²)")
+        
+        df_grafica = pd.DataFrame({
+            'Categoría': ['Mínimo', 'Promedio', 'Máximo'],
+            'Valor (MXN)': [float(datos['Valor_Minimo_m2']), float(datos['Valor_Promedio_m2']), float(datos['Valor_Maximo_m2'])]
+        })
+        
+        fig = px.bar(
+            df_grafica, 
+            x='Categoría', 
+            y='Valor (MXN)', 
+            text='Valor (MXN)',
+            color='Categoría',
+            color_discrete_sequence=['#4CAF50', '#2196F3', '#F44336']
+        )
+        
+        fig.update_traces(texttemplate='$%{text:,.2f}', textposition='outside')
+        fig.update_layout(showlegend=False, yaxis_title="Precio por m² (MXN)", margin=dict(t=30, b=0, l=0, r=0))
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 7. SECCIÓN DEL MAPA
+        st.subheader("🗺️ Delimitación Geográfica")
+        st.warning("📍 **Espacio reservado para el mapa interactivo.** Próximamente se integrarán los polígonos del INEGI para esta área.")
+    else:
+        st.error("No se encontraron datos para esta selección.")
