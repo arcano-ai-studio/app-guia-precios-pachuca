@@ -1,0 +1,74 @@
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+
+# 1. Configuración de la página
+st.set_page_config(page_title="Guía de Precios Inmobiliarios", layout="centered", page_icon="🏢")
+
+# 2. Cargar la base de datos
+@st.cache_data
+def load_data():
+    return pd.read_csv("Guia_Inmobiliaria_Pachuca.csv")
+
+df = load_data()
+
+# 3. Encabezado de la App
+st.title("🏢 Consulta de Valores de Terreno")
+st.markdown("**Soluciones para Inmobiliarias de Precisión | Zona Conurbada Pachuca**")
+st.divider()
+
+# 4. LÓGICA DE INTERFAZ (Filtros en cascada)
+zonas_disponibles = df['Nombre_Zona'].unique()
+zona_seleccionada = st.selectbox("📍 1. Elige la Zona:", zonas_disponibles)
+
+colonias_filtradas = df[df['Nombre_Zona'] == zona_seleccionada]['Colonia_Fraccionamiento'].unique()
+colonia_seleccionada = st.selectbox("🏘️ 2. Elige la Colonia o Fraccionamiento:", colonias_filtradas)
+
+st.divider()
+
+# 5. DESPLIEGUE DE RESULTADOS
+if colonia_seleccionada:
+    # Extraer los datos de la fila exacta
+    datos = df[(df['Nombre_Zona'] == zona_seleccionada) & (df['Colonia_Fraccionamiento'] == colonia_seleccionada)].iloc[0]
+    
+    st.subheader(f"{datos['Colonia_Fraccionamiento']}")
+    st.caption(f"Vocación principal: {datos['Vocación']}")
+    
+    # Tarjetas numéricas
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="Valor Mínimo", value=f"${datos['Valor_Minimo_m2']:,.2f}")
+    with col2:
+        st.metric(label="Valor Promedio", value=f"${datos['Valor_Promedio_m2']:,.2f}")
+    with col3:
+        st.metric(label="Valor Máximo", value=f"${datos['Valor_Maximo_m2']:,.2f}")
+        
+    st.info(f"📈 **Tasa de Plusvalía (promedio últimos 8 años):** {datos['Tasa_Variacion']}%")
+    
+    st.divider()
+    
+    # 6. GRÁFICA DE BARRAS DINÁMICA
+    st.subheader("📊 Análisis de Mercado (m²)")
+    
+    df_grafica = pd.DataFrame({
+        'Categoría': ['Mínimo', 'Promedio', 'Máximo'],
+        'Valor (MXN)': [datos['Valor_Minimo_m2'], datos['Valor_Promedio_m2'], datos['Valor_Maximo_m2']]
+    })
+    
+    fig = px.bar(
+        df_grafica, 
+        x='Categoría', 
+        y='Valor (MXN)', 
+        text='Valor (MXN)',
+        color='Categoría',
+        color_discrete_sequence=['#4CAF50', '#2196F3', '#F44336']
+    )
+    
+    fig.update_traces(texttemplate='$%{text:,.2f}', textposition='outside')
+    fig.update_layout(showlegend=False, yaxis_title="Precio por m² (MXN)", margin=dict(t=30, b=0, l=0, r=0))
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # 7. SECCIÓN DEL MAPA
+    st.subheader("🗺️ Delimitación Geográfica")
+    st.warning("📍 **Espacio reservado para el mapa interactivo.** Próximamente se integrarán los polígonos del INEGI para esta área.")
