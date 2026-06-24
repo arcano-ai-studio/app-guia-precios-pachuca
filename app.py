@@ -28,7 +28,6 @@ st.divider()
 
 # 5. DESPLIEGUE DE RESULTADOS
 if colonia_seleccionada:
-    # Filtro de seguridad para forzar la coincidencia exacta
     filtro = (df['Nombre_Zona'] == zona_seleccionada) & (df['Colonia_Fraccionamiento'] == colonia_seleccionada)
     
     if not df[filtro].empty:
@@ -72,8 +71,49 @@ if colonia_seleccionada:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # 7. SECCIÓN DEL MAPA
-        st.subheader("🗺️ Delimitación Geográfica")
-        st.warning("📍 **Espacio reservado para el mapa interactivo.** Próximamente se integrarán los polígonos del INEGI para esta área.")
+        st.divider()
+        
+        # 7. SECCIÓN DEL MAPA INTERACTIVO (PLAN B REFORZADO)
+        st.subheader("🗺️ Ubicación y Georreferenciación")
+        
+        # Validar si la colonia seleccionada tiene coordenadas válidas en el CSV
+        if 'Latitud' in datos and 'Longitud' in datos and pd.notna(datos['Latitud']) and pd.notna(datos['Longitud']):
+            try:
+                # Crear un mini-dataset para el mapa
+                mapa_df = pd.DataFrame({
+                    'lat': [float(datos['Latitud'])],
+                    'lon': [float(datos['Longitud'])],
+                    'Colonia': [datos['Colonia_Fraccionamiento']],
+                    'Precio_Promedio': [f"${datos['Valor_Promedio_m2']:,.2f}"]
+                })
+                
+                # Generar el mapa satelital/callejero interactivo
+                fig_mapa = px.scatter_mapbox(
+                    mapa_df,
+                    lat="lat",
+                    lon="lon",
+                    hover_name="Colonia",
+                    hover_data={"Precio_Promedio": True, "lat": False, "lon": False},
+                    zoom=15,
+                    height=400
+                )
+                
+                # Diseño del mapa usando estilos libres de OpenStreetMap
+                fig_mapa.update_layout(
+                    mapbox_style="open-street-map",
+                    margin=dict(t=0, b=0, l=0, r=0)
+                )
+                
+                # Aumentar el tamaño del pin para que sea muy visible
+                fig_mapa.update_traces(marker=dict(size=18, color='#F44336'))
+                
+                st.plotly_chart(fig_mapa, use_container_width=True)
+                st.caption("📍 El pin marca el centro de la zona de estudio. Puedes hacer zoom y arrastrar el mapa.")
+                
+            except Exception as e:
+                st.error("Hubo un problema al procesar las coordenadas de esta colonia.")
+        else:
+            st.warning("📍 Coordenadas no disponibles para esta colonia en la base de datos actual.")
+            
     else:
         st.error("No se encontraron datos para esta selección.")
