@@ -73,15 +73,12 @@ if colonia_seleccionada:
         
         st.divider()
         
-        # 7. SECCIÓN DEL MAPA INTERACTIVO (MAPBOX PREMIUM)
+        # 7. SECCIÓN DEL MAPA INTERACTIVO (MAPBOX SATELITAL)
         st.subheader("🗺️ Ubicación y Georreferenciación")
         
         if 'Latitud' in datos and 'Longitud' in datos and pd.notna(datos['Latitud']) and pd.notna(datos['Longitud']):
             try:
-                # Intentar leer el token desde los Secrets de Streamlit
                 if "MAPBOX_TOKEN" in st.secrets:
-                    px.set_mapbox_access_token(st.secrets["MAPBOX_TOKEN"])
-                    
                     mapa_df = pd.DataFrame({
                         'lat': [float(datos['Latitud'])],
                         'lon': [float(datos['Longitud'])],
@@ -89,30 +86,29 @@ if colonia_seleccionada:
                         'Precio': [f"${datos['Valor_Promedio_m2']:,.2f}/m²"]
                     })
                     
-                    # Generar el mapa con estilo de calles de alta precisión
-                    # Si prefieres vista de satélite pura, cambia "streets" por "satellite-streets"
                     fig_mapa = px.scatter_mapbox(
                         mapa_df,
                         lat="lat",
                         lon="lon",
                         hover_name="Colonia",
                         hover_data={"Precio": True, "lat": False, "lon": False},
-                        zoom=15,
+                        zoom=16, # Un poco más de zoom para apreciar las calles en el satélite
                         height=450
                     )
                     
+                    # FORZAR EL TOKEN Y EL ESTILO SATELITAL DIRECTAMENTE EN EL MAPA
                     fig_mapa.update_layout(
-                        mapbox_style="streets", 
+                        mapbox_style="satellite-streets", 
+                        mapbox_accesstoken=st.secrets["MAPBOX_TOKEN"],
                         margin=dict(t=0, b=0, l=0, r=0)
                     )
                     
-                    # Pin personalizado de alta visibilidad
                     fig_mapa.update_traces(marker=dict(size=22, color='#E91E63', symbol='circle'))
                     
                     st.plotly_chart(fig_mapa, use_container_width=True)
-                    st.caption("📍 Ubicación precisa de la zona de análisis. Puedes alternar el zoom y arrastrar.")
+                    st.caption("📍 Ubicación precisa. Vista satelital de alta resolución (arrastra y haz zoom).")
                 else:
-                    st.warning("⚠️ Configura el 'MAPBOX_TOKEN' en los Secrets de Streamlit para activar el mapa profesional.")
+                    st.warning("⚠️ Configura el 'MAPBOX_TOKEN' en los Secrets de Streamlit.")
                     
             except Exception as e:
                 st.error("Ocurrió un error al cargar el mapa con las coordenadas proporcionadas.")
