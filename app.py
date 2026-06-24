@@ -73,45 +73,49 @@ if colonia_seleccionada:
         
         st.divider()
         
-        # 7. SECCIÓN DEL MAPA INTERACTIVO (PLAN B REFORZADO)
+        # 7. SECCIÓN DEL MAPA INTERACTIVO (MAPBOX PREMIUM)
         st.subheader("🗺️ Ubicación y Georreferenciación")
         
-        # Validar si la colonia seleccionada tiene coordenadas válidas en el CSV
         if 'Latitud' in datos and 'Longitud' in datos and pd.notna(datos['Latitud']) and pd.notna(datos['Longitud']):
             try:
-                # Crear un mini-dataset para el mapa
-                mapa_df = pd.DataFrame({
-                    'lat': [float(datos['Latitud'])],
-                    'lon': [float(datos['Longitud'])],
-                    'Colonia': [datos['Colonia_Fraccionamiento']],
-                    'Precio_Promedio': [f"${datos['Valor_Promedio_m2']:,.2f}"]
-                })
-                
-                # Generar el mapa satelital/callejero interactivo
-                fig_mapa = px.scatter_mapbox(
-                    mapa_df,
-                    lat="lat",
-                    lon="lon",
-                    hover_name="Colonia",
-                    hover_data={"Precio_Promedio": True, "lat": False, "lon": False},
-                    zoom=15,
-                    height=400
-                )
-                
-                # Diseño del mapa usando estilos libres de OpenStreetMap
-                fig_mapa.update_layout(
-                    mapbox_style="open-street-map",
-                    margin=dict(t=0, b=0, l=0, r=0)
-                )
-                
-                # Aumentar el tamaño del pin para que sea muy visible
-                fig_mapa.update_traces(marker=dict(size=18, color='#F44336'))
-                
-                st.plotly_chart(fig_mapa, use_container_width=True)
-                st.caption("📍 El pin marca el centro de la zona de estudio. Puedes hacer zoom y arrastrar el mapa.")
-                
+                # Intentar leer el token desde los Secrets de Streamlit
+                if "MAPBOX_TOKEN" in st.secrets:
+                    px.set_mapbox_access_token(st.secrets["MAPBOX_TOKEN"])
+                    
+                    mapa_df = pd.DataFrame({
+                        'lat': [float(datos['Latitud'])],
+                        'lon': [float(datos['Longitud'])],
+                        'Colonia': [datos['Colonia_Fraccionamiento']],
+                        'Precio': [f"${datos['Valor_Promedio_m2']:,.2f}/m²"]
+                    })
+                    
+                    # Generar el mapa con estilo de calles de alta precisión
+                    # Si prefieres vista de satélite pura, cambia "streets" por "satellite-streets"
+                    fig_mapa = px.scatter_mapbox(
+                        mapa_df,
+                        lat="lat",
+                        lon="lon",
+                        hover_name="Colonia",
+                        hover_data={"Precio": True, "lat": False, "lon": False},
+                        zoom=15,
+                        height=450
+                    )
+                    
+                    fig_mapa.update_layout(
+                        mapbox_style="streets", 
+                        margin=dict(t=0, b=0, l=0, r=0)
+                    )
+                    
+                    # Pin personalizado de alta visibilidad
+                    fig_mapa.update_traces(marker=dict(size=22, color='#E91E63', symbol='circle'))
+                    
+                    st.plotly_chart(fig_mapa, use_container_width=True)
+                    st.caption("📍 Ubicación precisa de la zona de análisis. Puedes alternar el zoom y arrastrar.")
+                else:
+                    st.warning("⚠️ Configura el 'MAPBOX_TOKEN' en los Secrets de Streamlit para activar el mapa profesional.")
+                    
             except Exception as e:
-                st.error("Hubo un problema al procesar las coordenadas de esta colonia.")
+                st.error("Ocurrió un error al cargar el mapa con las coordenadas proporcionadas.")
         else:
             st.warning("📍 Coordenadas no disponibles para esta colonia en la base de datos actual.")
             
